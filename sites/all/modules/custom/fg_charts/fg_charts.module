@@ -26,11 +26,13 @@ function fg_charts_node_presave($node) {
       $emo_csv = fg_charts_emotion_csv_prepare($of_csv->uri);
     }
     if (!empty($emo_csv)) {
-      $node->field_emotions_csv[LANGUAGE_NONE][0] = $emo_csv;
+      $node->field_emotions_csv[LANGUAGE_NONE][0] = (array) $emo_csv;
+      $node->field_emotions_csv[LANGUAGE_NONE][0]['display'] = 1;
       $emo_json = fg_charts_emotion_json_prepare($emo_csv->uri);
     }
     if (!empty($emo_json)) {
-      $node->field_emotions_json[LANGUAGE_NONE][0] = $emo_json;
+      $node->field_emotions_json[LANGUAGE_NONE][0] = (array) $emo_json;
+      $node->field_emotions_json[LANGUAGE_NONE][0]['display'] = 1;
     }
   }
 }
@@ -210,14 +212,14 @@ function fg_charts_emotion_json_prepare($emo_csv_path) {
 /**
  * Implements hook_preprocess_HOOK().
  */
-function fg_charts_preprocess_node__charts(&$variables) {
-  if (!empty($variables['node']->field_emptions_json[LANGUAGE_NONE][0]['fid'])) {
-    $json_file = file_load($variables['node']->field_emptions_json[LANGUAGE_NONE][0]['fid']);
+function fg_charts_preprocess_node(&$variables) {
+  if (!empty($variables['node']->field_emotions_json[LANGUAGE_NONE][0]['fid'])) {
+    $json_file = file_load($variables['node']->field_emotions_json[LANGUAGE_NONE][0]['fid']);
     $json = file_get_contents(drupal_realpath($json_file->uri));
     drupal_add_js(array('chartsJSON' => $json), 'setting');
 
     //@TODO: replace with variable.
-    $css_width = 1920 * 4;
+    $css_width = 1920 * 8;
     $css_height = 200;
 
     drupal_add_css(".chart {
@@ -229,21 +231,7 @@ function fg_charts_preprocess_node__charts(&$variables) {
 
     drupal_add_js('https://code.highcharts.com/highcharts.js', 'external');
     drupal_add_js('https://code.highcharts.com/modules/data.js', 'external');
-
+    $module_path = drupal_get_path('module', 'fg_charts');
+    drupal_add_js($module_path . '/js/fg-charts.js', 'file');
   }
-  //@TODO: replace with variable.
-  $css_width = 1920 * 4;
-  $css_height = 200;
-
-  drupal_add_css(".chart {
-      min-width: {$css_width}px;
-      max-width: {$css_width}px;
-      height: {$css_height}px;
-      margin: 0 auto;
-    }", ['type' => 'inline']);
-
-  drupal_add_js('https://code.highcharts.com/highcharts.js', 'external');
-  drupal_add_js('https://code.highcharts.com/modules/data.js', 'external');
-  $module_path = drupal_get_path('module', 'fg_charts');
-  drupal_add_js($module_path . '/js/fg-charts.js', 'file');
 }
