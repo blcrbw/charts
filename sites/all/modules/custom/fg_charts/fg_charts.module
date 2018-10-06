@@ -1,0 +1,249 @@
+<?php
+
+/**
+ * @file
+ * Base charts functionality.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function fg_charts_menu() {
+  $items['admin/config/fg-charts'] = [
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['fg_charts_settings_form'],
+    'access arguments' => ['administer site'],
+  ];
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function fg_charts_node_presave($node) {
+  if ($node->type === 'charts') {
+    if (!empty($node->field_openface_csv[LANGUAGE_NONE][0]['fid']) && ($of_csv = file_load($node->field_openface_csv[LANGUAGE_NONE][0]['fid']))) {
+      $of_csv = file_load($node->field_openface_csv[LANGUAGE_NONE][0]['fid']);
+      $emo_csv = fg_charts_emotion_csv_prepare($of_csv->uri);
+    }
+    if (!empty($emo_csv)) {
+      $node->field_emotions_csv[LANGUAGE_NONE][0] = $emo_csv;
+      $emo_json = fg_charts_emotion_json_prepare($emo_csv->uri);
+    }
+    if (!empty($emo_json)) {
+      $node->field_emotions_json[LANGUAGE_NONE][0] = $emo_json;
+    }
+  }
+}
+
+/**
+ * Parse csv file to array.
+ *
+ * @param string $filename
+ *  File path
+ * @param string $delimiter
+ *  CSV delimiter
+ *
+ * @return array|bool
+ */
+function fg_charts_csv_to_array($filename = '', $delimiter = ',') {
+  if (!file_exists($filename) || !is_readable($filename)) {
+    return FALSE;
+  }
+  $header = NULL;
+  $data = [];
+  if (($handle = fopen($filename, 'r')) !== FALSE) {
+    while (($row = fgetcsv($handle, NULL, $delimiter)) !== FALSE) {
+      if (!$header) {
+        $header = $row;
+      }
+      else {
+        $data[] = array_combine($header, $row);
+      }
+    }
+    fclose($handle);
+  }
+
+  return $data;
+}
+
+/**
+ * Return emotions config.
+ */
+function fg_charts_emotion_config_get() {
+  return [
+    'happy' => ['+' => ['06', '12',], '-' => [],],
+    'sad' => ['+' => ['01', '04', '15',], '-' => [],],
+    'surprise' => ['+' => ['01', '02', '05', '26',], '-' => [],],
+    'fear' => ['+' => ['01', '02', '04', '05', '07', '20', '26',], '-' => [],],
+    'anger' => ['+' => ['04', '05', '07', '23',], '-' => [],],
+    'disgust' => ['+' => ['09', '15'], '-' => [],],
+    'contempt' => ['+' => ['12', '14',], '-' => [],],
+  ];
+}
+
+/**
+ * Prepare emotions csv.
+ *
+ * @param $of_csv_path
+ */
+function fg_charts_emotion_csv_prepare($of_csv_path) {
+  $result = FALSE;
+
+  // @TODO: replace with variable.
+  $au_threshold = 0.1;
+
+  $input_path = drupal_realpath($of_csv_path);
+  if (file_exists($input_path)) {
+    $csv = fg_charts_csv_to_array($input_path, ',');
+  }
+
+  if (!empty($csv)) {
+    $emotion_config = fg_charts_emotion_config_get();
+
+    $glue = ',';
+    $output_rows = [
+      implode($glue, [
+        '"frame"',
+        '"timestamp"',
+        '"happy_total"',
+        '"sad_total"',
+        '"surprise_total"',
+        '"fear_total"',
+        '"anger_total"',
+        '"disgust_total"',
+        '"contempt_total"',
+      ]),
+    ];
+    foreach ($csv as $row) {
+      $row_data = [];
+      $row_data['frame'] = $row['frame'];
+      $row_data[' timestamp'] = trim($row[' timestamp']);
+      foreach ($emotion_config as $emotion => $emotion_settings) {
+        $positive = 0;
+        $negative = 0;
+        try {
+          if (!empty($emotion_settings['+'])) {
+            foreach ($emotion_settings['+'] as $action_unit) {
+              if (empty($row[' AU' . $action_unit . '_r']) || $row[' AU' . $action_unit . '_r'] < $au_threshold) {
+                throw new Exception('AU value is too low.');
+              }
+              $positive += $row[' AU' . $action_unit . '_r'];
+            }
+            $positive = $positive / count($emotion_settings['+']);
+          }
+        }
+        catch (Exception $e) {
+          $positive = 0;
+        }
+        try {
+          if (!empty($emotion_settings['-'])) {
+            foreach ($emotion_settings['-'] as $action_unit) {
+              if (empty($row[' AU' . $action_unit . '_r'])) {
+                throw new Exception('AU value is too low.');
+              }
+              $negative += $row[' AU' . $action_unit . '_r'];
+            }
+            $negative = $negative / count($emotion_settings['-']);
+          }
+        }
+        catch (Exception $e) {
+          $negative = 0;
+        }
+        $total = $positive - $negative;
+        $row_data[$emotion . '_total'] = number_format($total, 6, '.', '');
+      }
+      $output_rows[] = implode($glue, $row_data);
+    }
+
+    $output = implode(PHP_EOL, $output_rows);
+
+    if (!empty($output)) {
+      $result = file_save_data($output, 'private://' . md5($output) . '.csv');
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Prepare emotion json for charts.
+ *
+ * @param $emo_csv_path
+ *
+ * @return bool|\stdClass
+ */
+function fg_charts_emotion_json_prepare($emo_csv_path) {
+  $result = FALSE;
+  $input_path = drupal_realpath($emo_csv_path);
+  if (file_exists($input_path)) {
+    $csv = fg_charts_csv_to_array($input_path, ',');
+  }
+
+  $data = [];
+  foreach ($csv as $row) {
+    foreach ($row as $header => $value) {
+      $data[$header][] = (float) $value;
+    }
+  }
+
+  $json_array = [
+    "xData" => $data['timestamp'],
+  ];
+  foreach ($data as $header => $values) {
+    $json_array['datasets'][] = [
+      "name" => $header,
+      "data" => $values,
+      "unit" => "points",
+      "type" => "line",
+      "valueDecimals" => 1,
+    ];
+  }
+
+  $json = json_encode($json_array);
+  if (!empty($json)) {
+    $result = file_save_data($json, 'private://' . md5($json) . '.json');
+  }
+
+  return $result;
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function fg_charts_preprocess_node__charts(&$variables) {
+  if (!empty($variables['node']->field_emptions_json[LANGUAGE_NONE][0]['fid'])) {
+    $json_file = file_load($variables['node']->field_emptions_json[LANGUAGE_NONE][0]['fid']);
+    $json = file_get_contents(drupal_realpath($json_file->uri));
+    drupal_add_js(array('chartsJSON' => $json), 'setting');
+
+    //@TODO: replace with variable.
+    $css_width = 1920 * 4;
+    $css_height = 200;
+
+    drupal_add_css(".chart {
+        min-width: {$css_width}px;
+        max-width: {$css_width}px;
+        height: {$css_height}px;
+        margin: 0 auto;
+      }", ['type' => 'inline']);
+
+    drupal_add_js('https://code.highcharts.com/highcharts.js', 'external');
+    drupal_add_js('https://code.highcharts.com/modules/data.js', 'external');
+
+  }
+  //@TODO: replace with variable.
+  $css_width = 1920 * 4;
+  $css_height = 200;
+
+  drupal_add_css(".chart {
+      min-width: {$css_width}px;
+      max-width: {$css_width}px;
+      height: {$css_height}px;
+      margin: 0 auto;
+    }", ['type' => 'inline']);
+
+  drupal_add_js('https://code.highcharts.com/highcharts.js', 'external');
+  drupal_add_js('https://code.highcharts.com/modules/data.js', 'external');
+  $module_path = drupal_get_path('module', 'fg_charts');
+  drupal_add_js($module_path . '/js/fg-charts.js', 'file');
+}

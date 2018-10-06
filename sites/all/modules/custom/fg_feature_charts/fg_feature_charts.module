@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Charts feature.
+ */
+
+include_once 'fg_feature_charts.features.inc';

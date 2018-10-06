@@ -1,0 +1,4 @@
+name = FocusGroup Charts.
+description = Draw charts for emotions.
+package = FocusGroup
+core = 7.x
