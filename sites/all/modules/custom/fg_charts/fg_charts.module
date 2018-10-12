@@ -223,7 +223,7 @@ function fg_charts_preprocess_node(&$variables) {
     drupal_add_js(array('chartsJSON' => $json), 'setting');
 
     //@TODO: replace with variable.
-    $css_width = 2200;
+    $css_width = 1800;
     $css_height = 100;
 
     drupal_add_css(".chart {
@@ -236,6 +236,6 @@ function fg_charts_preprocess_node(&$variables) {
     drupal_add_js('https://code.highcharts.com/highcharts.js', 'external');
     drupal_add_js('https://code.highcharts.com/modules/data.js', 'external');
     $module_path = drupal_get_path('module', 'fg_charts');
-    drupal_add_js($module_path . '/js/fg-charts.js', 'file');
+    drupal_add_js($module_path . '/js/fg-charts_new.js', 'file');
   }
 }
