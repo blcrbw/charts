@@ -94,13 +94,14 @@
                 Highcharts.chart(chartDiv, {
                     chart: {
                         marginLeft: 20, // Keep all charts left aligned
-                        spacingTop: 20,
-                        spacingBottom: 20
+                        spacingTop: 5,
+                        spacingBottom: 5
                     },
                     title: {
-                        text: dataset.name,
+                        text: '',
                         align: 'left',
                         margin: 0,
+                        enabled: false,
                         x: 10
                     },
                     credits: {
@@ -116,12 +117,14 @@
                         },
                         labels: {
                             format: '{value} s'
-                        }
+                        },
+                        min: 0
                     },
                     yAxis: {
                         title: {
                             text: null
-                        }
+                        },
+                        min: 0
                     },
                     tooltip: {
                         positioner: function () {
@@ -136,8 +139,10 @@
                         pointFormat: '{point.y}',
                         headerFormat: '',
                         shadow: false,
+                        enabled: false,
                         style: {
-                            fontSize: '18px'
+                            fontSize: '18px',
+                            float: 'right'
                         },
                         valueDecimals: dataset.valueDecimals
                     },

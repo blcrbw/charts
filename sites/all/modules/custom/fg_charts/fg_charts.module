@@ -123,34 +123,38 @@ function fg_charts_emotion_csv_prepare($of_csv_path) {
       foreach ($emotion_config as $emotion => $emotion_settings) {
         $positive = 0;
         $negative = 0;
-        try {
+        //try {
           if (!empty($emotion_settings['+'])) {
             foreach ($emotion_settings['+'] as $action_unit) {
               if (empty($row[' AU' . $action_unit . '_r']) || $row[' AU' . $action_unit . '_r'] < $au_threshold) {
-                throw new Exception('AU value is too low.');
+                $positive = 0;
+                break;
+                //throw new Exception('AU value is too low. Frame: ' . $row["frame"]);
               }
               $positive += $row[' AU' . $action_unit . '_r'];
             }
             $positive = $positive / count($emotion_settings['+']);
           }
-        }
-        catch (Exception $e) {
-          $positive = 0;
-        }
-        try {
+        //}
+        //catch (Exception $e) {
+        //  $positive = 0;
+        //}
+        //try {
           if (!empty($emotion_settings['-'])) {
             foreach ($emotion_settings['-'] as $action_unit) {
               if (empty($row[' AU' . $action_unit . '_r'])) {
-                throw new Exception('AU value is too low.');
+                $negative = 0;
+                break;
+                //throw new Exception('AU value is too low. Frame: ' . $row["frame"]);
               }
               $negative += $row[' AU' . $action_unit . '_r'];
             }
             $negative = $negative / count($emotion_settings['-']);
           }
-        }
-        catch (Exception $e) {
-          $negative = 0;
-        }
+        //}
+        //catch (Exception $e) {
+        //  $negative = 0;
+        //}
         $total = $positive - $negative;
         $row_data[$emotion . '_total'] = number_format($total, 6, '.', '');
       }
@@ -219,14 +223,14 @@ function fg_charts_preprocess_node(&$variables) {
     drupal_add_js(array('chartsJSON' => $json), 'setting');
 
     //@TODO: replace with variable.
-    $css_width = 1920 * 8;
-    $css_height = 200;
+    $css_width = 2200;
+    $css_height = 100;
 
     drupal_add_css(".chart {
         min-width: {$css_width}px;
         max-width: {$css_width}px;
         height: {$css_height}px;
-        margin: 0 auto;
+        margin: 0;
       }", ['type' => 'inline']);
 
     drupal_add_js('https://code.highcharts.com/highcharts.js', 'external');
