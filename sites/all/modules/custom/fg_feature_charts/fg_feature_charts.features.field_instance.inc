@@ -180,12 +180,55 @@ function fg_feature_charts_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-charts-field_scene_csv'.
+  $field_instances['node-charts-field_scene_csv'] = array(
+    'bundle' => 'charts',
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'file',
+        'settings' => array(),
+        'type' => 'file_default',
+        'weight' => 4,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_scene_csv',
+    'label' => 'Scene CSV',
+    'required' => 0,
+    'settings' => array(
+      'description_field' => 0,
+      'file_directory' => '',
+      'file_extensions' => 'csv',
+      'max_filesize' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'file',
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+      ),
+      'type' => 'file_generic',
+      'weight' => 0,
+    ),
+  );
+
   // Translatables
   // Included for use with string extractors like potx.
   t('Body');
   t('Emotions CSV');
   t('Emotions JSON');
   t('OpenFace CSV');
+  t('Scene CSV');
 
   return $field_instances;
 }
