@@ -48,7 +48,7 @@ function fg_feature_charts_field_default_field_bases() {
     'settings' => array(
       'display_default' => 0,
       'display_field' => 0,
-      'uri_scheme' => 'private',
+      'uri_scheme' => 'public',
     ),
     'translatable' => 0,
     'type' => 'file',
@@ -71,7 +71,7 @@ function fg_feature_charts_field_default_field_bases() {
     'settings' => array(
       'display_default' => 0,
       'display_field' => 0,
-      'uri_scheme' => 'private',
+      'uri_scheme' => 'public',
     ),
     'translatable' => 0,
     'type' => 'file',
@@ -100,6 +100,57 @@ function fg_feature_charts_field_default_field_bases() {
     'type' => 'file',
   );
 
+  // Exported field_base: 'field_protobrain_act_id'.
+  $field_bases['field_protobrain_act_id'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_protobrain_act_id',
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'number',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'number_integer',
+  );
+
+  // Exported field_base: 'field_protobrain_act_link'.
+  $field_bases['field_protobrain_act_link'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_protobrain_act_link',
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(
+      'max_length' => 255,
+    ),
+    'translatable' => 0,
+    'type' => 'text',
+  );
+
+  // Exported field_base: 'field_protobrain_fire_layer_id'.
+  $field_bases['field_protobrain_fire_layer_id'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_protobrain_fire_layer_id',
+    'indexes' => array(),
+    'locked' => 0,
+    'module' => 'number',
+    'settings' => array(),
+    'translatable' => 0,
+    'type' => 'number_integer',
+  );
+
   // Exported field_base: 'field_scene_csv'.
   $field_bases['field_scene_csv'] = array(
     'active' => 1,
@@ -121,6 +172,69 @@ function fg_feature_charts_field_default_field_bases() {
     ),
     'translatable' => 0,
     'type' => 'file',
+  );
+
+  // Exported field_base: 'field_scene_sheet_id'.
+  $field_bases['field_scene_sheet_id'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_scene_sheet_id',
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(
+      'max_length' => 255,
+    ),
+    'translatable' => 0,
+    'type' => 'text',
+  );
+
+  // Exported field_base: 'field_scene_sheet_link'.
+  $field_bases['field_scene_sheet_link'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_scene_sheet_link',
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(
+      'max_length' => 255,
+    ),
+    'translatable' => 0,
+    'type' => 'text',
+  );
+
+  // Exported field_base: 'field_youtube_link'.
+  $field_bases['field_youtube_link'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_youtube_link',
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(
+      'max_length' => 255,
+    ),
+    'translatable' => 0,
+    'type' => 'text',
   );
 
   return $field_bases;

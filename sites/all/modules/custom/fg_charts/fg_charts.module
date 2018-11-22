@@ -1,9 +1,13 @@
 <?php
-
 /**
  * @file
  * Base charts functionality.
  */
+
+require_once __DIR__ . '/fg_charts.google.inc';
+require_once __DIR__ . '/fg_charts.protobrain.inc';
+require_once __DIR__ . '/fg_charts.youtube.inc';
+require_once __DIR__ . '/fg_charts.forms.inc';
 
 /**
  * Implements hook_menu().
@@ -14,6 +18,42 @@ function fg_charts_menu() {
     'page arguments' => ['fg_charts_settings_form'],
     'access arguments' => ['administer site'],
   ];
+
+  return $items;
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function fg_charts_libraries_info() {
+  return array(
+    'google-api-php-client-master' => array(
+      'name' => 'Google API Client Library for PHP',
+      'vendor url' => 'https://developers.google.com/api-client-library/php/',
+      'download url' => 'https://github.com/google/google-api-php-client/releases',
+      'version arguments' => array(
+        'file' => 'src/Google/Client.php',
+        'pattern' => '/LIBVER = "([0-9a-zA-Z\.-]+)"/',
+        'lines' => 50,
+      ),
+      'path' => 'src',
+      'files' => array(
+        'php' => array(
+          '../vendor/autoload.php',
+        ),
+      ),
+    ),
+    'YouTubeDownloader' => array(
+      'name' => 'Google API Client Library for PHP',
+      'download url' => 'https://github.com/Athlon1600/youtube-downloader/releases',
+      'version' => '1.0.0',
+      'files' => array(
+        'php' => array(
+          'YouTubeDownloader.php',
+        ),
+      ),
+    ),
+  );
 }
 
 /**
@@ -21,8 +61,37 @@ function fg_charts_menu() {
  */
 function fg_charts_node_presave($node) {
   if ($node->type === 'charts') {
+    if (!empty($node->field_youtube_link[LANGUAGE_NONE][0]['value']) && (empty($node->original->field_youtube_link[LANGUAGE_NONE][0]['value']) || $node->original->field_youtube_link[LANGUAGE_NONE][0]['value'] !== $node->field_youtube_link[LANGUAGE_NONE][0]['value'])) {
+      $act = protobrain_integration_act_import($node->field_youtube_link[LANGUAGE_NONE][0]['value']);
+      if (!empty($act['act']['id'])) {
+        $node->field_protobrain_act_id[LANGUAGE_NONE][0]['value'] = $act['act']['id'];
+      }
+      else {
+        $node->field_protobrain_act_id = [];
+      }
+      if (!empty($act['url'])) {
+        $node->field_protobrain_act_link[LANGUAGE_NONE][0]['value'] = $act['url'];
+      }
+      else {
+        $node->field_protobrain_act_link = [];
+      }
+      $video_file = fg_charts_youtube_video_get($node->field_youtube_link[LANGUAGE_NONE][0]['value'], 'temporary://videos/' . md5($node->field_youtube_link[LANGUAGE_NONE][0]['value']) . '.mp4');
+    }
+    if (!empty($video_file)) {
+      $video_file_name = drupal_basename($video_file);
+      $base_name = preg_replace('/(.*)(\.mp4)$/', '$1', $video_file_name);
+      $out_dir = 'temporary://of/' . $base_name;
+      file_prepare_directory($out_dir, FILE_CREATE_DIRECTORY|FILE_MODIFY_PERMISSIONS);
+      $command = variable_get('openface_command', '/home/blc/prj/OpenFace/build/bin/FeatureExtraction -f !video -out_dir !out_dir');
+      $of_status = NULL;
+      $of_execute = system(format_string($command, ['!video' => escapeshellarg(drupal_realpath($video_file)), '!out_dir' => escapeshellarg(drupal_realpath($out_dir))]), $of_status);
+      $of_file = $out_dir . DIRECTORY_SEPARATOR . $base_name . '.csv';
+    }
+    if (!empty($of_file) && file_exists($of_file)) {
+      $node->field_openface_csv[LANGUAGE_NONE][0] = (array) file_save_data(file_get_contents($of_file));
+      $node->field_openface_csv[LANGUAGE_NONE][0]['display'] = 1;
+    }
     if (!empty($node->field_openface_csv[LANGUAGE_NONE][0]['fid']) && ($of_csv = file_load($node->field_openface_csv[LANGUAGE_NONE][0]['fid']))) {
-      $of_csv = file_load($node->field_openface_csv[LANGUAGE_NONE][0]['fid']);
       $emo_csv = fg_charts_emotion_csv_prepare($of_csv->uri);
     }
     if (!empty($emo_csv)) {
@@ -34,10 +103,25 @@ function fg_charts_node_presave($node) {
       $node->field_emotions_json[LANGUAGE_NONE][0] = (array) $emo_json;
       $node->field_emotions_json[LANGUAGE_NONE][0]['display'] = 1;
       $scene_csv = fg_charts_scene_csv_prepare($emo_json->uri);
+      $scene_sheet_id = !empty($node->field_scene_sheet_id[LANGUAGE_NONE][0]['value']) ? $node->field_scene_sheet_id[LANGUAGE_NONE][0]['value'] : NULL;
+      $scene_google_sheet = fg_charts_scene_google_sheet_prepare($emo_json->uri, $scene_sheet_id);
     }
     if (!empty($scene_csv)) {
       $node->field_scene_csv[LANGUAGE_NONE][0] = (array) $scene_csv;
       $node->field_scene_csv[LANGUAGE_NONE][0]['display'] = 1;
+    }
+    if (!empty($scene_google_sheet['id'])) {
+      $node->field_scene_sheet_id[LANGUAGE_NONE][0]['value'] = $scene_google_sheet['id'];
+    }
+    if (!empty($scene_google_sheet['link'])) {
+      $node->field_scene_sheet_link[LANGUAGE_NONE][0]['value'] = $scene_google_sheet['link'];
+      if (!empty($node->field_protobrain_act_id[LANGUAGE_NONE][0]['value'])) {
+        $fire_layer_id = !empty($node->field_protobrain_fire_layer_id[LANGUAGE_NONE][0]['value']) ? $node->field_protobrain_fire_layer_id[LANGUAGE_NONE][0]['value'] : NULL;
+        $fire_layer = protobrain_integration_fire_layer_add($node->field_protobrain_act_id[LANGUAGE_NONE][0]['value'], $scene_google_sheet['link'], $fire_layer_id);
+        if (!empty($fire_layer['id'])) {
+          $node->field_protobrain_fire_layer_id[LANGUAGE_NONE][0]['value'] = $fire_layer['id'];
+        }
+      }
     }
   }
 }
