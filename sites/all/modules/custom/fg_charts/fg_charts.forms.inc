@@ -19,6 +19,32 @@ function fg_charts_settings_form($form, $form_state) {
     '#title' => t('Openface command'),
     '#default_value' => variable_get('openface_command', '/home/blc/prj/OpenFace/build/bin/FeatureExtraction -f !video -out_dir !out_dir'),
   ];
+
+  $emotions = [
+    'happy',
+    'sad',
+    'surprise',
+    'fear',
+    'anger',
+    'disgust',
+    'contempt',
+  ];
+  $default_icons = variable_get('emotion_icons', []);
+  $form['emotion_icons'] = [
+    '#type' => 'fieldset',
+    '#title' => 'Emotion icons',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => TRUE,
+  ];
+  foreach ($emotions as $emotion) {
+    $form['emotion_icons'][$emotion] = [
+      '#type' => 'textfield',
+      '#title' => ucfirst($emotion),
+      '#default_value' => !empty($default_icons[$emotion]) ? $default_icons[$emotion] : '',
+    ];
+  }
+
   $form['protobrain_integration'] = [
     '#type' => 'fieldset',
     '#title' => 'Protobrain settings',
@@ -92,6 +118,17 @@ function fg_charts_settings_form($form, $form_state) {
     '#default_value' => variable_get('google_credentials', 0),
   ];
 
+  $form['au_threshold'] = [
+    '#type' => 'textfield',
+    '#title' => t('AU threshold'),
+    '#default_value' => variable_get('au_threshold', 0.5),
+  ];
+  $form['scene_threshold'] = [
+    '#type' => 'textfield',
+    '#title' => t('Scene threshold'),
+    '#default_value' => variable_get('scene_threshold', 0.7),
+  ];
+
   $form = system_settings_form($form);
   array_unshift($form['#submit'], 'fg_charts_settings_form_submit');
 
@@ -108,7 +145,7 @@ function fg_charts_settings_form_submit($form, &$form_state) {
   ];
 
   foreach ($files as $file) {
-    $new_file_fid = $form_state['values']['share'][$file];
+    $new_file_fid = $form_state['values'][$file];
     $current_file_fid = variable_get($file, 0);
     // Check if file was changed.
     if ($new_file_fid !== $current_file_fid) {

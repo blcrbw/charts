@@ -23,6 +23,8 @@ function fg_charts_google_client_get() {
   $credentials = variable_get('google_credentials', 0);
   if (!empty($credentials)) {
     $credentials = file_load($credentials);
+  }
+  if (!empty($credentials)) {
     $credentials_uri = $credentials->uri;
   }
   else {
@@ -85,7 +87,7 @@ function fg_charts_google_client_get() {
 function fg_charts_scene_google_sheet_prepare($emo_json_path, $spreadsheet_id = NULL) {
   $result = [];
 
-  $limit = 0.7;
+  $limit = variable_get('scene_threshold', 0.7);
   $input_path = drupal_realpath($emo_json_path);
   $data = [];
   $scenes = [];
@@ -101,6 +103,8 @@ function fg_charts_scene_google_sheet_prepare($emo_json_path, $spreadsheet_id = 
       }
     }
   }
+
+  $emo_icons = variable_get('emotion_icons', []);
 
   //  $body = new Google_Service_Sheets_BatchUpdateValuesRequest();
   //
@@ -224,6 +228,11 @@ function fg_charts_scene_google_sheet_prepare($emo_json_path, $spreadsheet_id = 
               'title' => 'contempt'
             ]
           ]
+        ]),
+        new Google_Service_Sheets_Request([
+          'deleteSheet' => [
+            'sheetId' => 0
+          ]
         ])
       ];
       // Create two sheets for our pivot table
@@ -239,32 +248,32 @@ function fg_charts_scene_google_sheet_prepare($emo_json_path, $spreadsheet_id = 
           "Data layer id\n(empty for global settings)"
         ],
         ['count_of_labels', '100', 'happy'],
-        ['icon', 'https://qasquad.com/html/images/scene.png', 'happy'],
-        ['color', '#d3d3d3', 'happy'],
+        ['icon', !empty($emo_icons['happy']) ? $emo_icons['happy'] : '', 'happy'],
+        ['color', '#90ed7d', 'happy'],
         ['title', 'Happy', 'happy'],
         ['count_of_labels', '100', 'sad'],
-        ['icon', 'https://qasquad.com/html/images/scene.png', 'sad'],
-        ['color', '#d3d3d3', 'sad'],
+        ['icon', !empty($emo_icons['sad']) ? $emo_icons['sad'] : '', 'sad'],
+        ['color', '#f7a35c', 'sad'],
         ['title', 'Sad', 'sad'],
         ['count_of_labels', '100', 'surprise'],
-        ['icon', 'https://qasquad.com/html/images/scene.png', 'surprise'],
-        ['color', '#d3d3d3', 'surprise'],
+        ['icon', !empty($emo_icons['surprise']) ? $emo_icons['surprise'] : '', 'surprise'],
+        ['color', '#8085e9', 'surprise'],
         ['title', 'Surprise', 'surprise'],
-        ['count_of_labels', '100	fear'],
-        ['icon', 'https://qasquad.com/html/images/scene.png', 'fear'],
-        ['color', '#d3d3d3', 'fear'],
+        ['count_of_labels', '100',	'fear'],
+        ['icon', !empty($emo_icons['fear']) ? $emo_icons['fear'] : '', 'fear'],
+        ['color', '#f15c80', 'fear'],
         ['title', 'Fear', 'fear'],
         ['count_of_labels', '100', 'anger'],
-        ['icon', 'https://qasquad.com/html/images/scene.png', 'anger'],
-        ['color', '#d3d3d3', 'anger'],
+        ['icon', !empty($emo_icons['anger']) ? $emo_icons['anger'] : '', 'anger'],
+        ['color', '#e4d354', 'anger'],
         ['title', 'Anger', 'anger'],
         ['count_of_labels', '100', 'disgust'],
-        ['icon', 'https://qasquad.com/html/images/scene.png', 'disgust'],
-        ['color', '#d3d3d3', 'disgust'],
+        ['icon', !empty($emo_icons['disgust']) ? $emo_icons['disgust'] : '', 'disgust'],
+        ['color', '#2b908f', 'disgust'],
         ['title', 'Disgust', 'disgust'],
         ['count_of_labels', '100', 'contempt'],
-        ['icon', 'https://qasquad.com/html/images/scene.png', 'contempt'],
-        ['color', '#d3d3d3', 'contempt'],
+        ['icon', !empty($emo_icons['contempt']) ? $emo_icons['contempt'] : '', 'contempt'],
+        ['color', '#f45b5b', 'contempt'],
         ['title', 'Contempt', 'contempt'],
       ];
       $body = new Google_Service_Sheets_ValueRange([
@@ -294,7 +303,7 @@ function fg_charts_scene_google_sheet_prepare($emo_json_path, $spreadsheet_id = 
         $values[] = [
           $scene['from'],
           $scene['to'],
-          $scene['comment'],
+          '',
           '',
         ];
 
@@ -302,7 +311,7 @@ function fg_charts_scene_google_sheet_prepare($emo_json_path, $spreadsheet_id = 
           $scene['max_time'],
           '',
           $scene['max_value'],
-          '',
+          !empty($emo_icons[$base_name]) ? $emo_icons[$base_name] : '',
         ];
       }
       $body = new Google_Service_Sheets_ValueRange([
