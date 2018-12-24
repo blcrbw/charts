@@ -118,15 +118,53 @@ function fg_charts_settings_form($form, $form_state) {
     '#default_value' => variable_get('google_credentials', 0),
   ];
 
-  $form['au_threshold'] = [
+  $form['au_settings'] = [
+    '#type' => 'fieldset',
+    '#title' => 'AU settings',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => FALSE,
+  ];
+  $form['au_settings']['au_threshold'] = [
     '#type' => 'textfield',
     '#title' => t('AU threshold'),
     '#default_value' => variable_get('au_threshold', 0.5),
   ];
-  $form['scene_threshold'] = [
+  $form['au_settings']['scene_threshold'] = [
     '#type' => 'textfield',
     '#title' => t('Scene threshold'),
     '#default_value' => variable_get('scene_threshold', 0.7),
+  ];
+
+  $form['au_settings']['au_min_x_rotation'] = [
+    '#type' => 'textfield',
+    '#title' => t('AU min x rotation'),
+    '#default_value' => variable_get('au_min_x_rotation', -0.5),
+  ];
+  $form['au_settings']['au_max_x_rotation'] = [
+    '#type' => 'textfield',
+    '#title' => t('AU max x rotation'),
+    '#default_value' => variable_get('au_max_x_rotation', 0.5),
+  ];
+  $form['au_settings']['au_min_y_rotation'] = [
+    '#type' => 'textfield',
+    '#title' => t('AU min y rotation'),
+    '#default_value' => variable_get('au_min_y_rotation', -0.5),
+  ];
+  $form['au_settings']['au_max_y_rotation'] = [
+    '#type' => 'textfield',
+    '#title' => t('AU max y rotation'),
+    '#default_value' => variable_get('au_max_y_rotation', 0.3),
+  ];
+  $form['au_settings']['au_min_z_rotation'] = [
+    '#type' => 'textfield',
+    '#title' => t('AU min z rotation'),
+    '#default_value' => variable_get('au_min_z_rotation', -0.75),
+  ];
+  $form['au_settings']['au_max_z_rotation'] = [
+    '#type' => 'textfield',
+    '#title' => t('AU max z rotation'),
+    '#default_value' => variable_get('au_max_z_rotation', 0.75),
   ];
 
   $form = system_settings_form($form);

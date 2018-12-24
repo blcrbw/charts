@@ -4,10 +4,13 @@
  * Base charts functionality.
  */
 
+// ~/prj/OpenFace/build/bin/FeatureExtraction -f "/home/i20/prj/emotion_estimate/morphcast/phone/VID_20181210_180628.mp4" -out_dir "/home/i20/prj/emotion_estimate/morphcast/openface/VID_20181210_180628" -aus -pose -q
+
 require_once __DIR__ . '/fg_charts.google.inc';
 require_once __DIR__ . '/fg_charts.protobrain.inc';
 require_once __DIR__ . '/fg_charts.youtube.inc';
 require_once __DIR__ . '/fg_charts.forms.inc';
+require_once __DIR__ . '/fg_charts.audio.inc';
 
 /**
  * Implements hook_menu().
@@ -83,7 +86,7 @@ function fg_charts_node_presave($node) {
       $base_name = preg_replace('/(.*)(\.mp4)$/', '$1', $video_file_name);
       $out_dir = 'temporary://of/' . $base_name;
       file_prepare_directory($out_dir, FILE_CREATE_DIRECTORY|FILE_MODIFY_PERMISSIONS);
-      $command = variable_get('openface_command', '/home/blc/prj/OpenFace/build/bin/FeatureExtraction -f !video -out_dir !out_dir');
+      $command = variable_get('openface_command', '/home/blc/prj/OpenFace/build/bin/FeatureExtraction -f !video -out_dir !out_dir -aus -pose -q');
       $of_status = NULL;
       $of_execute = system(format_string($command, ['!video' => escapeshellarg(drupal_realpath($video_file)), '!out_dir' => escapeshellarg(drupal_realpath($out_dir))]), $of_status);
       $of_file = $out_dir . DIRECTORY_SEPARATOR . $base_name . '.csv';
@@ -99,6 +102,7 @@ function fg_charts_node_presave($node) {
       $node->field_emotions_csv[LANGUAGE_NONE][0] = (array) $emo_csv;
       $node->field_emotions_csv[LANGUAGE_NONE][0]['display'] = 1;
       $emo_json = fg_charts_emotion_json_prepare($emo_csv->uri);
+      // $emo_json_afx = fg_charts_emotion_json_afx_prepare($emo_csv->uri);
     }
     if (!empty($emo_json)) {
       $node->field_emotions_json[LANGUAGE_NONE][0] = (array) $emo_json;
@@ -162,7 +166,7 @@ function fg_charts_csv_to_array($filename = '', $delimiter = ',') {
  * Return emotions config.
  */
 function fg_charts_emotion_config_get() {
-  return [
+  $base = [
     'happy' => [
       '+' => [
         ['06', '12',],
@@ -184,8 +188,8 @@ function fg_charts_emotion_config_get() {
     ],
     'surprise' => [
       '+' => [
-        ['01', '02', '05', '26',],
-        ['01', '02', '05',],
+        ['01', '02', '05', '26',], // fear
+        ['01', '02', '05',], // fear
         ['01', '02', '26',],
         ['05', '26',],
       ],
@@ -197,9 +201,9 @@ function fg_charts_emotion_config_get() {
         ['01', '02', '04', '05', '20', '25',],
         ['01', '02', '04', '05', '20', '26',],
         ['01', '02', '04', '05',],
-        ['01', '02', '05'],
+        ['01', '02', '05'], // surprise
         ['01', '02', '05', '25',],
-        ['01', '02', '05', '26',],
+        ['01', '02', '05', '26',], // surprise
         ['05', '20',],
         ['05', '20', '25',],
         ['05', '20', '26',],
@@ -274,6 +278,127 @@ function fg_charts_emotion_config_get() {
       '-' => [],
     ],
   ];
+
+  $norhaida_hussain = [
+    'happy' => [
+      '+' => [
+        ['06', '12',],
+        ['06', '12', '25',],
+        //['12',],
+      ],
+      '-' => [],
+    ],
+    'sad' => [
+      '+' => [
+        ['01', '04', '15',],
+        ['01', '04', '15', '17',],
+        ['01', '02', '04', '15', '17',],
+      ],
+      '-' => [],
+    ],
+    'surprise' => [
+      '+' => [
+        ['01', '02', '05', '26',],
+        ['01', '02', '05', '25', '27',],
+        ['01', '02', '05', '26', '27',],
+      ],
+      '-' => [],
+    ],
+    'fear' => [
+      '+' => [
+        ['01', '02', '04', '05', '20', '26',],
+        ['01', '04', '07', '20',],
+        ['01', '04', '05', '07',],
+      ],
+      '-' => [],
+    ],
+    'anger' => [
+      '+' => [
+        ['04', '05', '07', '23',],
+        ['04', '05', '15', '17',],
+        ['04', '05', '07', '23', '24',],
+      ],
+      '-' => [],
+    ],
+    'disgust' => [
+      '+' => [
+        ['09', '16', '15',],
+        ['01', '04', '15', '17',],
+        ['09', '17'],
+      ],
+      '-' => [],
+    ],
+    'contempt' => [
+      '+' => [
+        ['12', '14',],
+      ],
+      '-' => [],
+    ],
+  ];
+
+  $shichuan_du = [
+    'happy' => [
+      '+' => [
+        ['06', '12',],
+        ['06', '12', '25',],
+        ['12', '25',],
+        ['12',],
+        //['12',],
+      ],
+      '-' => [],
+    ],
+    'sad' => [
+      '+' => [
+        ['04', '15',],
+        ['01', '04', '15',],
+        ['06', '04', '15',],
+        ['04', '15', '17',],
+        ['04', '11', '15',],
+        ['01', '04', '15', '17',],
+      ],
+      '-' => [],
+    ],
+    'surprise' => [
+      '+' => [
+        ['01', '02', '05', '26',],
+        ['01', '02', '05', '25', '27',],
+        ['01', '02', '05', '26', '27',],
+      ],
+      '-' => [],
+    ],
+    'fear' => [
+      '+' => [
+        ['01', '02', '04', '05', '20', '26',],
+        ['01', '04', '07', '20',],
+        ['01', '04', '05', '07',],
+      ],
+      '-' => [],
+    ],
+    'anger' => [
+      '+' => [
+        ['04', '05', '07', '23',],
+        ['04', '05', '15', '17',],
+        ['04', '05', '07', '23', '24',],
+      ],
+      '-' => [],
+    ],
+    'disgust' => [
+      '+' => [
+        ['09', '16', '15',],
+        ['01', '04', '15', '17',],
+        ['09', '17'],
+      ],
+      '-' => [],
+    ],
+    'contempt' => [
+      '+' => [
+        ['12', '14',],
+      ],
+      '-' => [],
+    ],
+  ];
+
+  return $base;
 }
 
 /**
@@ -285,6 +410,13 @@ function fg_charts_emotion_csv_prepare($of_csv_path) {
   $result = FALSE;
 
   $au_threshold = variable_get('au_threshold', 0.5);
+
+  $min_x_rotation = variable_get('au_min_x_rotation', -0.5);
+  $max_x_rotation = variable_get('au_max_x_rotation', 0.5);
+  $min_y_rotation = variable_get('au_min_y_rotation', -0.5);
+  $max_y_rotation = variable_get('au_max_y_rotation', 0.3);
+  $min_z_rotation = variable_get('au_min_z_rotation', -0.75);
+  $max_z_rotation = variable_get('au_max_z_rotation', 0.75);
 
   $input_path = drupal_realpath($of_csv_path);
   if (file_exists($input_path)) {
@@ -312,16 +444,26 @@ function fg_charts_emotion_csv_prepare($of_csv_path) {
       $row_data = [];
       $row_data['frame'] = $row['frame'];
       $row_data[' timestamp'] = trim($row[' timestamp']);
+
+      $skip = ($row[' pose_Rx'] > $max_x_rotation)
+        || ($row[' pose_Rx'] < $min_x_rotation)
+        || ($row[' pose_Ry'] > $max_y_rotation)
+        || ($row[' pose_Ry'] < $min_y_rotation)
+        || ($row[' pose_Rz'] > $max_z_rotation)
+        || ($row[' pose_Rz'] < $min_z_rotation);
+
+      // $skip = FALSE;
       foreach ($emotion_config as $emotion => $emotion_settings) {
         $positive = 0;
         $negative = 0;
         //try {
-          if (!empty($emotion_settings['+'])) {
+          if (empty($skip) && !empty($emotion_settings['+'])) {
             $variants = [];
             foreach ($emotion_settings['+'] as $action_unit_set) {
               $variant = 0;
               foreach ($action_unit_set as $action_unit) {
                 if (empty($row[' AU' . $action_unit . '_r']) || $row[' AU' . $action_unit . '_r'] < $au_threshold) {
+                  $variant = 0;
                   break;
                   //throw new Exception('AU value is too low. Frame: ' . $row["frame"]);
                 }
@@ -338,19 +480,19 @@ function fg_charts_emotion_csv_prepare($of_csv_path) {
         //  $positive = 0;
         //}
         //try {
-          if (!empty($emotion_settings['-'])) {
-            foreach ($emotion_settings['-'] as $action_unit) {
-              $negative = 0;
-              if (empty($row[' AU' . $action_unit . '_r']) || $row[' AU' . $action_unit . '_r'] < $au_threshold) {
-                break;
-                //throw new Exception('AU value is too low. Frame: ' . $row["frame"]);
-              }
-              else {
-                $negative += $row[' AU' . $action_unit . '_r'];
-              }
-            }
-            $negative = $negative / count($emotion_settings['-']);
-          }
+//          if (empty($skip) && !empty($emotion_settings['-'])) {
+//            foreach ($emotion_settings['-'] as $action_unit) {
+//              $negative = 0;
+//              if (empty($row[' AU' . $action_unit . '_r']) || $row[' AU' . $action_unit . '_r'] < $au_threshold) {
+//                break;
+//                //throw new Exception('AU value is too low. Frame: ' . $row["frame"]);
+//              }
+//              else {
+//                $negative += $row[' AU' . $action_unit . '_r'];
+//              }
+//            }
+//            $negative = $negative / count($emotion_settings['-']);
+//          }
         //}
         //catch (Exception $e) {
         //  $negative = 0;
@@ -408,6 +550,45 @@ function fg_charts_emotion_json_prepare($emo_csv_path) {
   $json = json_encode($json_array);
   if (!empty($json)) {
     $result = file_save_data($json, 'private://' . md5($json) . '.json');
+  }
+
+  return $result;
+}
+
+/**
+ * Prepare emotion json for AfterEffects.
+ *
+ * @param $emo_csv_path
+ *
+ * @return bool|\stdClass
+ */
+function fg_charts_emotion_json_afx_prepare($emo_csv_path) {
+  $result = FALSE;
+  $input_path = drupal_realpath($emo_csv_path);
+  if (file_exists($input_path)) {
+    $csv = fg_charts_csv_to_array($input_path, ',');
+  }
+
+  $data = [];
+  foreach ($csv as $row) {
+    foreach ($row as $header => $value) {
+      $data[$header][] = (float) $value;
+    }
+  }
+
+  $json_array = [];
+  $headers = array_keys($data);
+  foreach ($data['timestamp'] as $key => $values) {
+    $item = [];
+    foreach ($headers as $header) {
+      $item[$header] = $data[$header][$key];
+    }
+    $json_array[] = $item;
+  }
+
+  $json = json_encode($json_array);
+  if (!empty($json)) {
+    $result = file_save_data($json, 'public://' . md5($json) . '.json');
   }
 
   return $result;
