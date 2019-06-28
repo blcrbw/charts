@@ -79,87 +79,84 @@
             }
 
 
-            activity = JSON.parse(Drupal.settings.chartsJSON);
+            activity = JSON.parse(Drupal.settings.chartsJSONSMA);
             activity.datasets.forEach(function (dataset, i) {
 
-                if (['happy_total', 'sad_total', 'surprise_total', 'fear_total', 'anger_total', 'disgust_total', 'contempt_total'].indexOf(dataset.name) !== -1) {
+                // Add X values
+                dataset = Highcharts.map(dataset, function (val, j) {
+                    return [activity.xData[j], val];
+                });
 
-                    // Add X values
-                    dataset.data = Highcharts.map(dataset.data, function (val, j) {
-                        return [activity.xData[j], val];
-                    });
+                var chartDiv = document.createElement('div');
+                chartDiv.className = 'chart';
+                document.getElementById('container').appendChild(chartDiv);
 
-                    var chartDiv = document.createElement('div');
-                    chartDiv.className = 'chart';
-                    document.getElementById('container').appendChild(chartDiv);
-
-                    Highcharts.chart(chartDiv, {
-                        chart: {
-                            marginLeft: 20, // Keep all charts left aligned
-                            spacingTop: 5,
-                            spacingBottom: 5
+                Highcharts.chart(chartDiv, {
+                    chart: {
+                        marginLeft: 20, // Keep all charts left aligned
+                        spacingTop: 5,
+                        spacingBottom: 5
+                    },
+                    title: {
+                        text: '',
+                        align: 'left',
+                        margin: 0,
+                        enabled: false,
+                        x: 10
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    legend: {
+                        enabled: false
+                    },
+                    xAxis: {
+                        crosshair: true,
+                        events: {
+                            setExtremes: syncExtremes
                         },
+                        labels: {
+                            format: '{value} s'
+                        },
+                        min: 0
+                    },
+                    yAxis: {
                         title: {
-                            text: '',
-                            align: 'left',
-                            margin: 0,
-                            enabled: false,
-                            x: 10
+                            text: null
                         },
-                        credits: {
-                            enabled: false
+                        min: 0
+                    },
+                    tooltip: {
+                        positioner: function () {
+                            return {
+                                // right aligned
+                                x: this.chart.chartWidth - this.label.width,
+                                y: 10 // align to title
+                            };
                         },
-                        legend: {
-                            enabled: false
+                        borderWidth: 0,
+                        backgroundColor: 'none',
+                        pointFormat: '{point.y}',
+                        headerFormat: '',
+                        shadow: false,
+                        enabled: false,
+                        style: {
+                            fontSize: '18px',
+                            float: 'right'
                         },
-                        xAxis: {
-                            crosshair: true,
-                            events: {
-                                setExtremes: syncExtremes
-                            },
-                            labels: {
-                                format: '{value} s'
-                            },
-                            min: 0
-                        },
-                        yAxis: {
-                            title: {
-                                text: null
-                            },
-                            min: 0
-                        },
+                        valueDecimals: dataset.valueDecimals
+                    },
+                    series: [{
+                        data: dataset.data,
+                        // name: dataset.name,
+                        // type: dataset.type,
+                        color: Highcharts.getOptions().colors[i],
+                        fillOpacity: 0.3,
                         tooltip: {
-                            positioner: function () {
-                                return {
-                                    // right aligned
-                                    x: this.chart.chartWidth - this.label.width,
-                                    y: 10 // align to title
-                                };
-                            },
-                            borderWidth: 0,
-                            backgroundColor: 'none',
-                            pointFormat: '{point.y}',
-                            headerFormat: '',
-                            shadow: false,
-                            enabled: false,
-                            style: {
-                                fontSize: '18px',
-                                float: 'right'
-                            },
-                            valueDecimals: dataset.valueDecimals
-                        },
-                        series: [{
-                            data: dataset.data,
-                            name: dataset.name,
-                            type: dataset.type,
-                            color: Highcharts.getOptions().colors[i],
-                            fillOpacity: 0.3,
-                            tooltip: {
-                                valueSuffix: ' ' + dataset.unit
-                            }
-                        }]
-                    });
-                }
+                            valueSuffix: ' ' + dataset.unit
+                        }
+                    }]
+                });
             });
 
         }

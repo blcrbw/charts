@@ -332,3 +332,232 @@ function fg_charts_scene_google_sheet_prepare($emo_json_path, $spreadsheet_id = 
 
   return $result;
 }
+
+/**
+ * Prepare scene google sheet all emotions in one row.
+ *
+ * @param string $emo_json_path
+ *
+ * @param string $spreadsheet_id
+ *
+ * @return array
+ */
+function fg_charts_scene_google_sheet_row_prepare($emo_json_path, $spreadsheet_id = NULL) {
+  $result = [];
+
+  $limit = variable_get('scene_threshold', 0.7);
+  $input_path = drupal_realpath($emo_json_path);
+  $data = [];
+  $scenes = [];
+  if (file_exists($input_path)) {
+    $json = file_get_contents($input_path);
+    $data = drupal_json_decode($json);
+  }
+  $datasets = [];
+  if (!empty($data['xData']) && !empty($data['datasets'])) {
+    foreach ($data['datasets'] as $dataset) {
+      if (!in_array($dataset['name'], ['frame', 'timestamp'])) {
+        $datasets[$dataset['name']] = array_combine($data['xData'], $dataset['data']);
+      }
+    }
+  }
+
+  $emo_icons = variable_get('emotion_icons', []);
+  $emo_settings = [
+    'happy' => [
+      'color' => '#f7ed3980',
+      'icon' => !empty($emo_icons['happy']) ? $emo_icons['happy'] : '',
+      'title' => 'Happy',
+    ],
+    'sad' => [
+      'color' => '#49bfe780',
+      'icon' => !empty($emo_icons['sad']) ? $emo_icons['sad'] : '',
+      'title' => 'Sad',
+    ],
+    'surprise' => [
+      'color' => '#f79b3980',
+      'icon' => !empty($emo_icons['surprise']) ? $emo_icons['surprise'] : '',
+      'title' => 'Surprise',
+    ],
+    'fear' => [
+      'color' => '#b8c9d480',
+      'icon' => !empty($emo_icons['fear']) ? $emo_icons['fear'] : '',
+      'title' => 'Fear',
+    ],
+    'anger' => [
+      'color' => '#da2e1e80',
+      'icon' => !empty($emo_icons['anger']) ? $emo_icons['anger'] : '',
+      'title' => 'Anger',
+    ],
+    'disgust' => [
+      'color' => '#9ad14b80',
+      'icon' => !empty($emo_icons['disgust']) ? $emo_icons['disgust'] : '',
+      'title' => 'Disgust',
+    ],
+    'contempt' => [
+      'color' => '#c248e880',
+      'icon' => !empty($emo_icons['contempt']) ? $emo_icons['contempt'] : '',
+      'title' => 'Contempt',
+    ],
+  ];
+
+  foreach ($datasets as $name => $data) {
+    $scene = ['from' => NULL, 'to' => NULL, 'comment' => $name, 'max_value' => NULL, 'max_time' => NULL];
+    $empty_time = FALSE;
+    $current_time = 0;
+    foreach ($data as $time => $value) {
+      if ((int) $time !== $current_time) {
+        if (!empty($empty_time) && !empty($scene['from'])) {
+          $scene['to'] = $current_time - 1;
+          $scenes[$name][] = $scene;
+          $scene = ['from' => NULL, 'to' => NULL, 'comment' => $name, 'max_value' => NULL, 'max_time' => NULL];
+        }
+        $empty_time = TRUE;
+      }
+      $current_time = (int) $time;
+      if ($value >= $limit) {
+        $empty_time = FALSE;
+        if (empty($scene['from'])) {
+          $scene['from'] = (int) $time;
+          $scene['max_time'] = $current_time;
+          $scene['max_value'] = $value;
+        }
+        elseif ($value > $scene['max_value']) {
+          $scene['max_time'] = $current_time;
+          $scene['max_value'] = $value;
+        }
+      }
+    }
+  }
+
+  if (!empty($scenes)) {
+    libraries_load('google-api-php-client-master');
+
+    // Get the API client and construct the service object.
+    try {
+      $client = fg_charts_google_client_get();
+    }
+    catch (Exception $e) {
+      watchdog('google', $e->getMessage());
+
+      return [];
+    }
+    $service = new Google_Service_Sheets($client);
+    $drive_service = new Google_Service_Drive($client);
+
+    if (empty($spreadsheet_id)) {
+      $spreadsheet = new Google_Service_Sheets_Spreadsheet([
+        'properties' => [
+          'title' => md5(time()),
+        ]
+      ]);
+      $spreadsheet = $service->spreadsheets->create($spreadsheet, [
+        'fields' => 'spreadsheetId'
+      ]);
+
+      $requests = [
+        new Google_Service_Sheets_Request([
+          'addSheet' => [
+            'properties' => [
+              'title' => 'settings'
+            ]
+          ]
+        ]),
+        new Google_Service_Sheets_Request([
+          'addSheet' => [
+            'properties' => [
+              'title' => 'emotions'
+            ]
+          ]
+        ]),
+        new Google_Service_Sheets_Request([
+          'deleteSheet' => [
+            'sheetId' => 0
+          ]
+        ])
+      ];
+      // Create two sheets for our pivot table
+      $batchUpdateRequest = new Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
+        'requests' => $requests
+      ]);
+      $service->spreadsheets->batchUpdate($spreadsheet->getSpreadsheetId(), $batchUpdateRequest);
+
+      $values = [
+        [
+          'Setting name',
+          'Setting value',
+          "Data layer id\n(empty for global settings)"
+        ],
+        ['count_of_labels', '100', 'emotions'],
+        ['icon', !empty($emo_icons['emotions']) ? $emo_icons['emotions'] : '', 'emotions'],
+        ['color', '#afafaf80', 'emotions'],
+        ['title', 'Emotions', 'emotions'],
+      ];
+      $body = new Google_Service_Sheets_ValueRange([
+        'values' => $values
+      ]);
+      $params = [
+        'valueInputOption' => "RAW"
+      ];
+      $service->spreadsheets_values->update($spreadsheet->getSpreadsheetId(), 'settings!A1', $body, $params);
+
+      $newPermission = new Google_Service_Drive_Permission();
+      $newPermission->setType('anyone');
+      $newPermission->setRole('reader');
+      $newPermission->setWithLink(TRUE);
+      $drive_service->permissions->create($spreadsheet->getSpreadsheetId(), $newPermission);
+    }
+    else {
+      $spreadsheet = $service->spreadsheets->get($spreadsheet_id);
+    }
+
+    $values = [
+      [
+        "Started at\n(seconds, required)",
+        "Finished at\n(second, optional)",
+        "Comment\n(text, optional)",
+        "Image\n(link, optional)",
+        "Scene color\n(optional)",
+        "Image position\n(second, optional)",
+      ],
+    ];
+    foreach ($scenes as $name => $set) {
+      $base_name = preg_replace('/(.*)(\_total)$/', '$1', $name);
+      foreach ($set as $scene) {
+        $values[] = [
+          $scene['from'],
+          $scene['to'],
+          '',
+          '',
+          !empty($emo_settings[$base_name]['color']) ? $emo_settings[$base_name]['color'] : '',
+          '',
+        ];
+
+        $values[] = [
+          $scene['max_time'],
+          '',
+          $scene['max_value'],
+          !empty($emo_settings[$base_name]['icon']) ? $emo_settings[$base_name]['icon'] : '',
+          '',
+          '',
+        ];
+      }
+    }
+    $body = new Google_Service_Sheets_ValueRange([
+      'values' => $values
+    ]);
+    $params = [
+      'valueInputOption' => "RAW"
+    ];
+    $service->spreadsheets_values->update($spreadsheet->getSpreadsheetId(), "emotions!A1",
+      $body, $params);
+
+    $response = $drive_service->files->get($spreadsheet->getSpreadsheetId(), ['fields' => ['webViewLink']]);
+    $result = [
+      'id' => $spreadsheet->getSpreadsheetId(),
+      'link' => $response->getWebViewLink(),
+    ];
+  }
+
+  return $result;
+}

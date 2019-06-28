@@ -102,14 +102,28 @@ function fg_charts_node_presave($node) {
       $node->field_emotions_csv[LANGUAGE_NONE][0] = (array) $emo_csv;
       $node->field_emotions_csv[LANGUAGE_NONE][0]['display'] = 1;
       $emo_json = fg_charts_emotion_json_prepare($emo_csv->uri);
-      // $emo_json_afx = fg_charts_emotion_json_afx_prepare($emo_csv->uri);
+      $emo_json_afx = fg_charts_emotion_json_afx_prepare($emo_csv->uri);
+      $emo_json_sma = fg_charts_emotion_sma_prepare($emo_csv->uri);
+      $emo_json_sec = fg_charts_emotion_sec_prepare($emo_csv->uri);
     }
     if (!empty($emo_json)) {
       $node->field_emotions_json[LANGUAGE_NONE][0] = (array) $emo_json;
       $node->field_emotions_json[LANGUAGE_NONE][0]['display'] = 1;
       $scene_csv = fg_charts_scene_csv_prepare($emo_json->uri);
       $scene_sheet_id = !empty($node->field_scene_sheet_id[LANGUAGE_NONE][0]['value']) ? $node->field_scene_sheet_id[LANGUAGE_NONE][0]['value'] : NULL;
-      $scene_google_sheet = fg_charts_scene_google_sheet_prepare($emo_json->uri, $scene_sheet_id);
+      $scene_google_sheet = fg_charts_scene_google_sheet_row_prepare($emo_json->uri, $scene_sheet_id);
+    }
+    if (!empty($emo_json_afx)) {
+      $node->field_emotions_afx_json[LANGUAGE_NONE][0] = (array) $emo_json_afx;
+      $node->field_emotions_afx_json[LANGUAGE_NONE][0]['display'] = 1;
+    }
+    if (!empty($emo_json_sma)) {
+      $node->field_emotions_sma_json[LANGUAGE_NONE][0] = (array) $emo_json_sma;
+      $node->field_emotions_sma_json[LANGUAGE_NONE][0]['display'] = 1;
+    }
+    if (!empty($emo_json_sec)) {
+      $node->field_emotions_json_sec[LANGUAGE_NONE][0] = (array) $emo_json_sec;
+      $node->field_emotions_json_sec[LANGUAGE_NONE][0]['display'] = 1;
     }
     if (!empty($scene_csv)) {
       $node->field_scene_csv[LANGUAGE_NONE][0] = (array) $scene_csv;
@@ -235,6 +249,7 @@ function fg_charts_emotion_config_get() {
         ['04', '05', '17', '24',],
         ['04', '05', '23',],
         ['04', '05', '24',],
+        ['04', '05',],
         ['04', '07', '10', '22', '23', '25',],
         ['04', '07', '10', '22', '23', '26',],
         ['04', '07', '10', '23', '25',],
@@ -245,6 +260,7 @@ function fg_charts_emotion_config_get() {
         ['04', '07', '17', '24',],
         ['04', '07', '23',],
         ['04', '07', '24',],
+        ['04', '07',],
         ['05', '07', '10', '22', '23', '25',],
         ['05', '07', '10', '22', '23', '26',],
         ['05', '07', '10', '23', '25',],
@@ -443,7 +459,7 @@ function fg_charts_emotion_csv_prepare($of_csv_path) {
     foreach ($csv as $row) {
       $row_data = [];
       $row_data['frame'] = $row['frame'];
-      $row_data[' timestamp'] = trim($row[' timestamp']);
+      $row_data[' timestamp'] = round(trim($row[' timestamp']), 3);
 
       $skip = ($row[' pose_Rx'] > $max_x_rotation)
         || ($row[' pose_Rx'] < $min_x_rotation)
@@ -498,7 +514,7 @@ function fg_charts_emotion_csv_prepare($of_csv_path) {
         //  $negative = 0;
         //}
         $total = $positive - $negative;
-        $row_data[$emotion . '_total'] = number_format($total, 6, '.', '');
+        $row_data[$emotion . '_total'] = round($total, 3);
       }
       $output_rows[] = implode($glue, $row_data);
     }
@@ -538,13 +554,96 @@ function fg_charts_emotion_json_prepare($emo_csv_path) {
     "xData" => $data['timestamp'],
   ];
   foreach ($data as $header => $values) {
-    $json_array['datasets'][] = [
-      "name" => $header,
-      "data" => $values,
-      "unit" => "points",
-      "type" => "line",
-      "valueDecimals" => 1,
-    ];
+    if (!in_array($header, ['timestamp', 'frame'])) {
+      $json_array['datasets'][] = [
+        "name" => $header,
+        "data" => $values,
+        "unit" => "points",
+        "type" => "line",
+        "valueDecimals" => 1,
+      ];
+    }
+  }
+
+  $json = json_encode($json_array);
+  if (!empty($json)) {
+    $result = file_save_data($json, 'private://' . md5($json) . '.json');
+  }
+
+  return $result;
+}
+
+/**
+ * Prepare emotion sma json for charts.
+ *
+ * @param $emo_csv_path
+ *
+ * @return bool|\stdClass
+ */
+function fg_charts_emotion_sma_prepare($emo_csv_path) {
+  $result = FALSE;
+  $input_path = drupal_realpath($emo_csv_path);
+  if (file_exists($input_path)) {
+    $csv = fg_charts_csv_to_array($input_path, ',');
+  }
+
+  $data = [];
+  foreach ($csv as $row) {
+    foreach ($row as $header => $value) {
+      $data[$header][] = (float) $value;
+    }
+  }
+
+  $json_array = [
+    "xData" => $data['timestamp'],
+  ];
+  foreach ($data as $header => $values) {
+    if (!in_array($header, ['timestamp', 'frame'])) {
+      $json_array['datasets'][] = [
+        "name" => $header,
+        "data" => _fg_charts_array_sma($values, 30),
+        "unit" => "points",
+        "type" => "line",
+        "valueDecimals" => 1,
+      ];
+    }
+  }
+
+  $json = json_encode($json_array);
+  if (!empty($json)) {
+    $result = file_save_data($json, 'private://' . md5($json) . '.json');
+  }
+
+  return $result;
+}
+
+/**
+ * Prepare emotion json by seconds for charts.
+ *
+ * @param $emo_csv_path
+ *
+ * @return bool|\stdClass
+ */
+function fg_charts_emotion_sec_prepare($emo_csv_path) {
+  $result = FALSE;
+  $input_path = drupal_realpath($emo_csv_path);
+  if (file_exists($input_path)) {
+    $csv = fg_charts_csv_to_array($input_path, ',');
+  }
+
+  $data = [];
+  foreach ($csv as $row) {
+    foreach ($row as $header => $value) {
+      $data[$header][] = (float) $value;
+    }
+  }
+
+  $json_array = [];
+  foreach ($data as $header => $values) {
+    if (!in_array($header, ['timestamp', 'frame'])) {
+      $datum  = array_combine($data['timestamp'], $values);
+      $json_array[$header] = _fg_charts_values_sec($datum, 'max');
+    }
   }
 
   $json = json_encode($json_array);
@@ -686,11 +785,17 @@ function fg_charts_scene_csv_prepare($emo_json_path) {
 function fg_charts_preprocess_node(&$variables) {
   if (!empty($variables['node']->field_emotions_json[LANGUAGE_NONE][0]['fid'])) {
     $json_file = file_load($variables['node']->field_emotions_json[LANGUAGE_NONE][0]['fid']);
+  }
+//  if (!empty($variables['node']->field_emotions_sma_json[LANGUAGE_NONE][0]['fid'])) {
+//    $json_file = file_load($variables['node']->field_emotions_sma_json[LANGUAGE_NONE][0]['fid']);
+//  }
+
+  if (!empty($json_file)) {
     $json = file_get_contents(drupal_realpath($json_file->uri));
     drupal_add_js(array('chartsJSON' => $json), 'setting');
 
     //@TODO: replace with variable.
-    $css_width = 1800;
+    $css_width = 1900; //3840;
     $css_height = 100;
 
     drupal_add_css(".chart {
@@ -698,12 +803,125 @@ function fg_charts_preprocess_node(&$variables) {
         max-width: {$css_width}px;
         height: {$css_height}px;
         margin: 0;
-      }", ['type' => 'inline']);
+      }
+      #page {
+        padding: 0px;
+      }", ['type' => 'inline', 'group' => CSS_THEME, 'weight' => 100]);
 
     drupal_add_js('https://code.highcharts.com/highcharts.js', 'external');
     drupal_add_js('https://code.highcharts.com/modules/data.js', 'external');
     $module_path = drupal_get_path('module', 'fg_charts');
     drupal_add_js($module_path . '/js/fg-charts.js', 'file');
-    //drupal_add_js($module_path . '/js/fg-charts_new.js', 'file');
+//    drupal_add_js($module_path . '/js/fg-charts_new.js', 'file');
+  }
+}
+
+/**
+ * Calculate simple moving average by array.
+ *
+ * @param $array
+ * @param $period
+ */
+function _fg_charts_array_sma(array $array, $period) {
+  $array = array_values($array);
+  $result = [];
+
+  if ($period <= count($array)) {
+    foreach ($array as $key => $value) {
+      $result[$key] = $key + 1 < $period
+        ? 0
+        : array_sum(array_slice($array, $key + 1 - $period, $period)) / $period;
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Prepare emotion values for second.
+ *
+ * @param $array
+ */
+function _fg_charts_values_sec(array $data, $type = 'average') {
+  $result = [];
+  $sum = 0;
+  $max = 0;
+  $count = 0;
+
+  foreach ($data as $key => $value) {
+    if (fmod($key, 1) == 0 ) {
+      if (!empty($sum) && !empty($count)) {
+        $result[(int) ($key - 1)] = $type == 'max' ? round($max, 3) : round($sum / $count, 3);
+      }
+      $sum = 0;
+      $max = 0;
+      $count = 0;
+    }
+    $sum += $value;
+    $max = max($max, $value);
+    $count++;
+  }
+  if (!empty($count)) {
+    $result[(int) round($key) - 1] = $type == 'max' ? round($max, 3) : round($sum / $count, 3);
+  }
+
+  return $result;
+}
+
+function fg_charts_exp2() {
+  $emotions = [
+//    'happy',
+//    'sad',
+//    'surprize',
+//    'fear',
+    'anger',
+//    'disgust',
+//    'contempt',
+  ];
+
+  $fpses = [
+    225,
+    120,
+    60,
+    30,
+  ];
+
+  $resolutions = [
+    '1080x1440',
+    '720x960',
+    '480x640',
+    '360x480',
+  ];
+
+  $base_path = '/home/i20/Videos/225/emotions/mp4/';
+  foreach ($emotions as $emotion) {
+    foreach ($resolutions as $resolution) {
+      foreach ($fpses as $fps) {
+        $node = new stdClass();
+        $node->title = "Exp #3: $emotion $resolution $fps без порогов";
+        $node->type = 'charts';
+        $node->uid = 1;
+        $node->language = LANGUAGE_NONE;
+        $node->status = NODE_PUBLISHED;
+        $node->field_openface_csv[LANGUAGE_NONE][0] = (array) file_save_data(file_get_contents($base_path . "$emotion/of/{$emotion}_{$resolution}x{$fps}/{$emotion}_{$resolution}x{$fps}.csv"));
+        $node->field_openface_csv[LANGUAGE_NONE][0]['display'] = 1;
+        node_save($node);
+
+        if (!empty($node->field_emotions_csv[LANGUAGE_NONE][0]['fid'])) {
+          $csv = file_load($node->field_emotions_csv[LANGUAGE_NONE][0]['fid']);
+          $csv_source = drupal_realpath($csv->uri);
+          $emotion_csv_dir = $base_path . "$emotion/emotion_csv/$emotion";
+          file_prepare_directory($emotion_csv_dir, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+          file_unmanaged_copy($csv_source, $emotion_csv_dir . "/{$emotion}_{$resolution}x{$fps}.csv", FILE_EXISTS_REPLACE);
+        }
+        if (!empty($node->field_emotions_sma_json[LANGUAGE_NONE][0]['fid'])) {
+          $json = file_load($node->field_emotions_sma_json[LANGUAGE_NONE][0]['fid']);
+          $json_source = drupal_realpath($json->uri);
+          $json_dir = $base_path . "$emotion/sma/$emotion";
+          file_prepare_directory($json_dir, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+          file_unmanaged_copy($json_source, $json_dir . "/{$emotion}_{$resolution}x{$fps}.json", FILE_EXISTS_REPLACE);
+        }
+      }
+    }
   }
 }

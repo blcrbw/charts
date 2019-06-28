@@ -54,6 +54,48 @@ function fg_feature_charts_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-charts-field_emotions_afx_json'.
+  $field_instances['node-charts-field_emotions_afx_json'] = array(
+    'bundle' => 'charts',
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'file',
+        'settings' => array(),
+        'type' => 'file_default',
+        'weight' => 11,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_emotions_afx_json',
+    'label' => 'Emotions AFX json',
+    'required' => 0,
+    'settings' => array(
+      'description_field' => 0,
+      'file_directory' => '',
+      'file_extensions' => 'json',
+      'max_filesize' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'file',
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+      ),
+      'type' => 'file_generic',
+      'weight' => 7,
+    ),
+  );
+
   // Exported field_instance: 'node-charts-field_emotions_csv'.
   $field_instances['node-charts-field_emotions_csv'] = array(
     'bundle' => 'charts',
@@ -135,6 +177,90 @@ function fg_feature_charts_field_default_field_instances() {
       ),
       'type' => 'file_generic',
       'weight' => 5,
+    ),
+  );
+
+  // Exported field_instance: 'node-charts-field_emotions_json_sec'.
+  $field_instances['node-charts-field_emotions_json_sec'] = array(
+    'bundle' => 'charts',
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'file',
+        'settings' => array(),
+        'type' => 'file_default',
+        'weight' => 13,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_emotions_json_sec',
+    'label' => 'Emotions JSON by seconds',
+    'required' => 0,
+    'settings' => array(
+      'description_field' => 0,
+      'file_directory' => '',
+      'file_extensions' => 'json',
+      'max_filesize' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'file',
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+      ),
+      'type' => 'file_generic',
+      'weight' => 6,
+    ),
+  );
+
+  // Exported field_instance: 'node-charts-field_emotions_sma_json'.
+  $field_instances['node-charts-field_emotions_sma_json'] = array(
+    'bundle' => 'charts',
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'file',
+        'settings' => array(),
+        'type' => 'file_default',
+        'weight' => 12,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_emotions_sma_json',
+    'label' => 'Emotions SMA json',
+    'required' => 0,
+    'settings' => array(
+      'description_field' => 0,
+      'file_directory' => '',
+      'file_extensions' => 'json',
+      'max_filesize' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'file',
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+      ),
+      'type' => 'file_generic',
+      'weight' => 8,
     ),
   );
 
@@ -222,7 +348,7 @@ function fg_feature_charts_field_default_field_instances() {
       'module' => 'number',
       'settings' => array(),
       'type' => 'number',
-      'weight' => 9,
+      'weight' => 12,
     ),
   );
 
@@ -262,7 +388,7 @@ function fg_feature_charts_field_default_field_instances() {
         'size' => 60,
       ),
       'type' => 'text_textfield',
-      'weight' => 10,
+      'weight' => 13,
     ),
   );
 
@@ -308,7 +434,7 @@ function fg_feature_charts_field_default_field_instances() {
       'module' => 'number',
       'settings' => array(),
       'type' => 'number',
-      'weight' => 11,
+      'weight' => 14,
     ),
   );
 
@@ -350,7 +476,7 @@ function fg_feature_charts_field_default_field_instances() {
         'progress_indicator' => 'throbber',
       ),
       'type' => 'file_generic',
-      'weight' => 6,
+      'weight' => 9,
     ),
   );
 
@@ -390,7 +516,7 @@ function fg_feature_charts_field_default_field_instances() {
         'size' => 60,
       ),
       'type' => 'text_textfield',
-      'weight' => 7,
+      'weight' => 10,
     ),
   );
 
@@ -430,7 +556,7 @@ function fg_feature_charts_field_default_field_instances() {
         'size' => 60,
       ),
       'type' => 'text_textfield',
-      'weight' => 8,
+      'weight' => 11,
     ),
   );
 
@@ -477,8 +603,11 @@ function fg_feature_charts_field_default_field_instances() {
   // Translatables
   // Included for use with string extractors like potx.
   t('Body');
+  t('Emotions AFX json');
   t('Emotions CSV');
   t('Emotions JSON');
+  t('Emotions JSON by seconds');
+  t('Emotions SMA json');
   t('OpenFace CSV');
   t('Protobrain act id');
   t('Protobrain act link');
